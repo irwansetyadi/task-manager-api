@@ -1,5 +1,6 @@
 const express = require('express');
 const Task = require('../models/task');
+const User = require('../models/user');
 const auth = require('../middleware/auth');
 const router = new express.Router();
 
@@ -11,7 +12,7 @@ router.post('/tasks', auth, async (req, res) =>{
 
     try{
         await task.save();
-        res.send(task);
+        res.status(201).send(task);
     } catch(e) {
         res.status(400).send(e);
     }
@@ -19,9 +20,34 @@ router.post('/tasks', auth, async (req, res) =>{
 
 router.get('/tasks', auth, async (req, res) => {
     try {
-        const task = await Task.find({author: req.user._id})
-        // await req.user.populate('tasks').execPopulate();
-        res.send(task);
+        const match = {};
+        const sort = {};
+
+        if(req.query.completed) match.completed = req.query.completed === 'true';
+
+        if(req.query.sortBy) {
+            const parts = req.query.sortBy.split('_');
+
+            sort[parts[0]] = parts[1] === 'desc' ? -1 : 1;
+        }
+
+
+        // const tasks = await Task.find({author: req.user._id});
+        await User.findById(req.user._id).populate({
+            path: 'tasks',
+            match,
+            perDocumentLimit: parseInt(req.query.limit),
+            options: {
+                skip: parseInt(req.query.skip),
+                sort
+            }
+        }).exec((err, user) => {
+            if(err) throw new Error;
+
+            res.send(user.tasks);
+        })
+
+        // res.send(tasks);
     } catch (e) {
         res.status(500).send()
     }
