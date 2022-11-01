@@ -47,7 +47,10 @@ const userSchema = new mongoose.Schema({
             type: String,
             required: true
         }
-    }]
+    }],
+    profilePic: {
+        type: Buffer
+    }
 }, {
     timestamps: true
 })
@@ -59,6 +62,7 @@ userSchema.methods.toJSON = function() {
 
     delete userObject.password;
     delete userObject.tokens;
+    delete userObject.profilePic;
 
     return userObject;
 }
